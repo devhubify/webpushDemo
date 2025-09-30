@@ -27,34 +27,39 @@
     <div class="max-w-4xl mx-auto">
         <header class="text-center py-6 mb-8 border-b border-byd-primary">
             <h1 class="text-3xl sm:text-4xl font-extrabold text-byd-primary">Ferramenta de Demo WebPush</h1>
-            <p class="mt-2 text-gray-600">Teste o ciclo de vida da Inscrição e Disparo de Notificações.</p>
+            <p class="mt-2 text-gray-600">Teste o ciclo de vida da Inscrição, Disparo e Remoção de Notificações.</p>
         </header>
         <main class="space-y-8">
             <section class="card bg-white p-6 rounded-xl">
-                <h2 class="text-2xl font-semibold text-byd-accent mb-4">1. Status e Inscrição</h2>
+                <h2 class="text-2xl font-semibold text-byd-accent mb-4">1. Status e Controle</h2>
                 <div id="status-container" class="mb-4 p-3 bg-gray-100 rounded-lg">
                     <p class="font-medium">Permissão Atual: <span id="notification-status" class="font-bold text-gray-700">Verificando...</span></p>
-                    <p class="font-medium">Service Worker: <span id="sw-status" class="font-bold text-gray-700">Aguardando Registro...</span></p>
+                    <p class="font-medium">Service Worker: <span id="sw-status" class="font-bold text-gray-700">Aguardando...</span></p>
                 </div>
-                <p class="text-sm text-gray-500 mb-4">Clique abaixo para iniciar o processo de WebPush e solicitar a permissão do navegador.</p>
-                <button id="subscribe-button" class="w-full sm:w-auto px-6 py-3 bg-byd-primary text-white font-bold rounded-lg hover:bg-byd-accent transition duration-150 disabled:opacity-50" disabled>
+                <p class="text-sm text-gray-500 mb-4">Use os botões abaixo para gerenciar sua inscrição nas notificações push.</p>
+                
+                <button id="subscribe-button" class="w-full sm:w-auto px-6 py-3 bg-byd-primary text-white font-bold rounded-lg hover:bg-byd-accent transition duration-150 disabled:opacity-50">
                     Ativar Notificações (Opt-In)
+                </button>
+
+                <button id="unsubscribe-button" class="w-full sm:w-auto px-6 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 transition duration-150" style="display: none;">
+                    Desativar Notificações
                 </button>
             </section>
             <section class="card bg-white p-6 rounded-xl">
                 <h2 class="text-2xl font-semibold text-byd-accent mb-4">2. Dados da Inscrição (Token)</h2>
-                <p class="mb-4 text-sm text-gray-600">Este JSON é o **PushSubscription Object** que seu Front-End envia para o Backend para registro.</p>
+                <p class="mb-4 text-sm text-gray-600">Este JSON é o **PushSubscription Object** que seu Front-End envia para o Backend.</p>
                 <div class="bg-gray-800 text-green-300 p-4 rounded-lg overflow-x-auto text-sm">
                     <pre id="subscription-data" class="text-xs sm:text-sm">Aguardando inscrição...</pre>
                 </div>
                 <div class="mt-6">
                     <label class="block text-sm font-medium text-gray-700">VAPID Public Key (Usada no Frontend):</label>
-                    <input type="text" id="vapid-key-display" readonly class="mt-1 block w-full border border-gray-300 p-2 rounded-lg bg-gray-100 text-gray-700 text-xs" value="BMCTCx-A6eyruSecRiGXsEi7ek9CVXSpI22gXI_3hy-cnhEGHOOUOuhxnVpxMq3nH2LEdBgACQaLrsL6Lv7ibdI">
+                    <input type="text" id="vapid-key-display" readonly class="mt-1 block w-full border border-gray-300 p-2 rounded-lg bg-gray-100 text-gray-700 text-xs" value="!!! COLE SUA CHAVE PÚBLICA VAPID AQUI !!!">
                 </div>
             </section>
             <section class="card bg-white p-6 rounded-xl">
                 <h2 class="text-2xl font-semibold text-byd-accent mb-4">3. Disparo de Teste (Via Backend)</h2>
-                <p class="mb-4 text-sm text-gray-600">Este formulário envia os dados para sua API na Vercel, que dispara a notificação via WebPush.</p>
+                <p class="mb-4 text-sm text-gray-600">Este formulário envia os dados para sua API na Vercel, que dispara a notificação para todos os inscritos.</p>
                 <form id="push-form" class="space-y-4">
                     <div>
                         <label for="title" class="block text-sm font-medium text-gray-700">Título da Notificação:</label>
@@ -62,14 +67,14 @@
                     </div>
                     <div>
                         <label for="body" class="block text-sm font-medium text-gray-700">Corpo da Mensagem:</label>
-                        <textarea id="body" class="mt-1 block w-full border border-gray-300 p-3 rounded-lg focus:ring-byd-accent focus:border-byd-accent" rows="2" required>🎉 Sua demo de WebPush na Vercel está funcionando!</textarea>
+                        <textarea id="body" class="mt-1 block w-full border border-gray-300 p-3 rounded-lg focus:ring-byd-accent focus:border-byd-accent" rows="2" required>🎉 A notificação da demo está funcionando!</textarea>
                     </div>
                     <div>
                         <label for="url" class="block text-sm font-medium text-gray-700">URL ao Clicar:</label>
                         <input type="url" id="url" class="mt-1 block w-full border border-gray-300 p-3 rounded-lg focus:ring-byd-accent focus:border-byd-accent" value="https://vercel.com" required>
                     </div>
-                    <button type="submit" id="send-push-button" class="w-full px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition duration-150 disabled:opacity-50" disabled>
-                        Disparar Notificação (Via Servidor)
+                    <button type="submit" id="send-push-button" class="w-full px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition duration-150" disabled>
+                        Disparar Notificação (Para Todos)
                     </button>
                 </form>
             </section>
@@ -83,6 +88,7 @@
     </div>
 
     <script>
+        // --- FUNÇÕES UTILITÁRIAS ---
         function logMessage(message, type = 'info') {
             const logElement = document.getElementById('log');
             const now = new Date().toLocaleTimeString();
@@ -94,8 +100,6 @@
             logElement.scrollTop = logElement.scrollHeight;
         }
 
-        const VAPID_PUBLIC_KEY = document.getElementById('vapid-key-display').value;
-
         function urlBase64ToUint8Array(base64String) {
             const padding = '='.repeat((4 - base64String.length % 4) % 4);
             const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -105,38 +109,81 @@
             return outputArray;
         }
 
+        // --- VARIÁVEIS GLOBAIS ---
+        const VAPID_PUBLIC_KEY = document.getElementById('vapid-key-display').value;
         const subscribeButton = document.getElementById('subscribe-button');
+        const unsubscribeButton = document.getElementById('unsubscribe-button');
         const sendPushButton = document.getElementById('send-push-button');
+        let currentSubscription = null;
+        let serviceWorkerRegistration = null;
+
+        // --- FUNÇÕES PRINCIPAIS ---
 
         async function subscribeUser() {
             try {
-                const registration = await navigator.serviceWorker.ready;
                 const permission = await Notification.requestPermission();
                 document.getElementById('notification-status').textContent = permission.toUpperCase();
                 if (permission !== 'granted') throw new Error('Permissão de notificação negada.');
 
                 logMessage('Inscrevendo para notificações push...', 'info');
-                const subscription = await registration.pushManager.subscribe({
+                const subscription = await serviceWorkerRegistration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
                 });
                 
-                document.getElementById('subscription-data').textContent = JSON.stringify(subscription, null, 2);
-
                 logMessage('Enviando inscrição para o servidor...', 'info');
                 await fetch('/api/save-subscription', {
-                    method: 'POST',
-                    body: JSON.stringify(subscription),
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', body: JSON.stringify(subscription), headers: { 'Content-Type': 'application/json' },
                 });
-                logMessage('Inscrição salva no servidor com sucesso!', 'success');
                 
-                sendPushButton.disabled = false;
-                subscribeButton.disabled = true;
+                logMessage('Inscrição salva no servidor com sucesso!', 'success');
+                currentSubscription = subscription;
+                updateUI();
             } catch (error) {
                 logMessage(`Falha na Inscrição: ${error.message}`, 'error');
+                updateUI();
             }
         }
+
+        async function unsubscribeUser() {
+            if (!currentSubscription) return;
+
+            logMessage('Desativando inscrição...', 'warning');
+            try {
+                await fetch('/api/delete-subscription', {
+                    method: 'POST', body: JSON.stringify(currentSubscription), headers: { 'Content-Type': 'application/json' },
+                });
+                logMessage('Inscrição removida do servidor.', 'success');
+
+                await currentSubscription.unsubscribe();
+                
+                currentSubscription = null;
+                updateUI();
+                logMessage('Notificações desativadas com sucesso!', 'success');
+            } catch (error) {
+                logMessage(`Erro ao desativar: ${error.message}`, 'error');
+            }
+        }
+
+        function updateUI() {
+            if (currentSubscription) {
+                subscribeButton.style.display = 'none';
+                unsubscribeButton.style.display = 'inline-block';
+                sendPushButton.disabled = false;
+                document.getElementById('subscription-data').textContent = JSON.stringify(currentSubscription, null, 2);
+            } else {
+                subscribeButton.style.display = 'inline-block';
+                unsubscribeButton.style.display = 'none';
+                sendPushButton.disabled = true;
+                document.getElementById('subscription-data').textContent = 'Nenhuma inscrição ativa.';
+                subscribeButton.disabled = Notification.permission === 'denied';
+            }
+        }
+        
+        // --- LÓGICA DE INICIALIZAÇÃO E EVENTOS ---
+
+        subscribeButton.addEventListener('click', subscribeUser);
+        unsubscribeButton.addEventListener('click', unsubscribeUser);
 
         document.getElementById('push-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -158,45 +205,27 @@
                 logMessage(`Erro ao enviar notificação: ${error.message}`, 'error');
             }
         });
-        
-        subscribeButton.addEventListener('click', subscribeUser);
 
         document.addEventListener('DOMContentLoaded', async () => {
             logMessage('DOM carregado. Verificando suporte...');
             if ('serviceWorker' in navigator && 'PushManager' in window) {
-                logMessage('Service Worker e PushManager suportados!', 'success');
                 try {
-                    await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                    serviceWorkerRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                    logMessage('Service Worker registrado.', 'success');
                     document.getElementById('sw-status').textContent = 'REGISTRADO';
-                    document.getElementById('sw-status').classList.add('text-green-600');
-                    logMessage('Service Worker registrado.');
+
+                    document.getElementById('notification-status').textContent = Notification.permission.toUpperCase();
                     
-                    const permission = Notification.permission;
-                    document.getElementById('notification-status').textContent = permission.toUpperCase();
-                    if (permission === 'granted') {
-                        const reg = await navigator.serviceWorker.ready;
-                        const sub = await reg.pushManager.getSubscription();
-                        if (sub) {
-                            document.getElementById('subscription-data').textContent = JSON.stringify(sub, null, 2);
-                            sendPushButton.disabled = false;
-                            subscribeButton.disabled = true;
-                            logMessage('Inscrição existente recuperada.', 'success');
-                        } else {
-                            subscribeButton.disabled = false;
-                        }
-                    } else if (permission === 'denied') {
-                        subscribeButton.disabled = true;
-                    } else {
-                        subscribeButton.disabled = false;
-                    }
+                    currentSubscription = await serviceWorkerRegistration.pushManager.getSubscription();
+                    updateUI();
+
                 } catch (error) {
-                    document.getElementById('sw-status').textContent = 'FALHA NO REGISTRO';
                     logMessage(`Falha no registro do SW: ${error}`, 'error');
+                    document.getElementById('sw-status').textContent = 'FALHA';
                 }
             } else {
                 logMessage('Seu navegador não suporta Service Workers ou WebPush.', 'error');
                 subscribeButton.disabled = true;
-                sendPushButton.disabled = true;
             }
         });
     </script>
