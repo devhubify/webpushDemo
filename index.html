@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebPush Demo - Inscrição e Disparo</title>
+    <title>8DHubify WebPush Demo - Inscrição e Disparo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -26,7 +26,8 @@
 <body class="bg-gray-50 min-h-screen p-4 sm:p-8 font-sans">
     <div class="max-w-4xl mx-auto">
         <header class="text-center py-6 mb-8 border-b border-byd-primary">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-byd-primary">Ferramenta de Demo WebPush</h1>
+			<img class="logo-hubify" style="margin: 20px auto;padding: 10px;background: #000034;border-radius: 10px;" src="public/logo 8D Hubify.jpg">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-byd-primary">Demo WebPush</h1>
             <p class="mt-2 text-gray-600">Teste o ciclo de vida da Inscrição, Disparo e Remoção de Notificações.</p>
         </header>
         <main class="space-y-8">
@@ -48,7 +49,7 @@
             </section>
             <section class="card bg-white p-6 rounded-xl">
                 <h2 class="text-2xl font-semibold text-byd-accent mb-4">2. Dados da Inscrição (Token)</h2>
-                <p class="mb-4 text-sm text-gray-600">Este JSON é o **PushSubscription Object** que seu Front-End envia para o Backend.</p>
+                <p class="mb-4 text-sm text-gray-600">Este JSON é o **PushSubscription Object** que o Front-End envia para o Backend.</p>
                 <div class="bg-gray-800 text-green-300 p-4 rounded-lg overflow-x-auto text-sm">
                     <pre id="subscription-data" class="text-xs sm:text-sm">Aguardando inscrição...</pre>
                 </div>
@@ -59,7 +60,7 @@
             </section>
             <section class="card bg-white p-6 rounded-xl">
                 <h2 class="text-2xl font-semibold text-byd-accent mb-4">3. Disparo de Teste (Via Backend)</h2>
-                <p class="mb-4 text-sm text-gray-600">Este formulário envia os dados para sua API na Vercel, que dispara a notificação para todos os inscritos.</p>
+                <p class="mb-4 text-sm text-gray-600">Este formulário envia os dados para API, que dispara a notificação para todos os inscritos.</p>
                 <form id="push-form" class="space-y-4">
                     <div>
                         <label for="title" class="block text-sm font-medium text-gray-700">Título da Notificação:</label>
@@ -71,7 +72,7 @@
                     </div>
                     <div>
                         <label for="url" class="block text-sm font-medium text-gray-700">URL ao Clicar:</label>
-                        <input type="url" id="url" class="mt-1 block w-full border border-gray-300 p-3 rounded-lg focus:ring-byd-accent focus:border-byd-accent" value="https://vercel.com" required>
+                        <input type="url" id="url" class="mt-1 block w-full border border-gray-300 p-3 rounded-lg focus:ring-byd-accent focus:border-byd-accent" value="https://hubify.com.br" required>
                     </div>
                     <button type="submit" id="send-push-button" class="w-full px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition duration-150" disabled>
                         Disparar Notificação (Para Todos)
@@ -87,147 +88,148 @@
         </main>
     </div>
 
-    <script>
-        // --- FUNÇÕES UTILITÁRIAS ---
-        function logMessage(message, type = 'info') {
-            const logElement = document.getElementById('log');
-            const now = new Date().toLocaleTimeString();
-            let color = 'text-gray-300';
-            if (type === 'error') color = 'text-red-400';
-            if (type === 'success') color = 'text-green-400';
-            if (type === 'warning') color = 'text-yellow-400';
-            logElement.innerHTML += `<div class="${color}">[${now}] ${message}</div>`;
-            logElement.scrollTop = logElement.scrollHeight;
+   <script>
+    // --- FUNÇÕES UTILITÁRIAS ---
+    function logMessage(message, type = 'info') {
+        const logElement = document.getElementById('log');
+        const now = new Date().toLocaleTimeString();
+        let color = 'text-gray-300';
+        if (type === 'error') color = 'text-red-400';
+        if (type === 'success') color = 'text-green-400';
+        if (type === 'warning') color = 'text-yellow-400';
+        logElement.innerHTML += `<div class="${color}">[${now}] ${message}</div>`;
+        logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+        return outputArray;
+    }
+
+    // --- VARIÁVEIS GLOBAIS ---
+    const VAPID_PUBLIC_KEY = document.getElementById('vapid-key-display').value;
+    const subscribeButton = document.getElementById('subscribe-button');
+    const unsubscribeButton = document.getElementById('unsubscribe-button');
+    const sendPushButton = document.getElementById('send-push-button');
+    let currentSubscription = null;
+    let serviceWorkerRegistration = null;
+
+    // --- FUNÇÕES PRINCIPAIS ---
+
+    async function subscribeUser() {
+        try {
+            const permission = await Notification.requestPermission();
+            document.getElementById('notification-status').textContent = permission.toUpperCase();
+            if (permission !== 'granted') throw new Error('Permissão de notificação negada.');
+
+            logMessage('Inscrevendo para notificações push...', 'info');
+            const subscription = await serviceWorkerRegistration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+            
+            logMessage('Enviando inscrição para o servidor...', 'info');
+            await fetch('/api/save-subscription', {
+                method: 'POST', body: JSON.stringify(subscription), headers: { 'Content-Type': 'application/json' },
+            });
+            
+            logMessage('Inscrição salva no servidor com sucesso!', 'success');
+            currentSubscription = subscription;
+            updateUI();
+        } catch (error) {
+            logMessage(`Falha na Inscrição: ${error.message}`, 'error');
+            updateUI();
         }
+    }
 
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
-            return outputArray;
+    async function unsubscribeUser() {
+        if (!currentSubscription) return;
+
+        logMessage('Desativando inscrição...', 'warning');
+        try {
+            await fetch('/api/delete-subscription', {
+                method: 'POST', body: JSON.stringify(currentSubscription), headers: { 'Content-Type': 'application/json' },
+            });
+            logMessage('Inscrição removida do servidor.', 'success');
+
+            await currentSubscription.unsubscribe();
+            
+            currentSubscription = null;
+            updateUI();
+            logMessage('Notificações desativadas com sucesso!', 'success');
+        } catch (error) {
+            logMessage(`Erro ao desativar: ${error.message}`, 'error');
         }
+    }
 
-        // --- VARIÁVEIS GLOBAIS ---
-        const VAPID_PUBLIC_KEY = document.getElementById('vapid-key-display').value;
-        const subscribeButton = document.getElementById('subscribe-button');
-        const unsubscribeButton = document.getElementById('unsubscribe-button');
-        const sendPushButton = document.getElementById('send-push-button');
-        let currentSubscription = null;
-        let serviceWorkerRegistration = null;
+    function updateUI() {
+        if (currentSubscription) {
+            subscribeButton.style.display = 'none';
+            unsubscribeButton.style.display = 'inline-block';
+            sendPushButton.disabled = false;
+            document.getElementById('subscription-data').textContent = JSON.stringify(currentSubscription, null, 2);
+        } else {
+            subscribeButton.style.display = 'inline-block';
+            unsubscribeButton.style.display = 'none';
+            sendPushButton.disabled = true;
+            document.getElementById('subscription-data').textContent = 'Nenhuma inscrição ativa.';
+            subscribeButton.disabled = Notification.permission === 'denied';
+        }
+    }
+    
+    // --- LÓGICA DE INICIALIZAÇÃO E EVENTOS ---
 
-        // --- FUNÇÕES PRINCIPAIS ---
+    subscribeButton.addEventListener('click', subscribeUser);
+    unsubscribeButton.addEventListener('click', unsubscribeUser);
 
-        async function subscribeUser() {
+    document.getElementById('push-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const payload = {
+            title: document.getElementById('title').value,
+            body: document.getElementById('body').value,
+            url: document.getElementById('url').value,
+            icon: '/logo.png' // 
+        };
+        logMessage('Enviando pedido de notificação para o servidor...', 'warning');
+        try {
+            const response = await fetch('/api/send-notification', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!response.ok) throw new Error(`Falha no servidor: ${response.statusText}`);
+            logMessage('Servidor aceitou o pedido. Notificação deve chegar em breve!', 'success');
+        } catch (error) {
+            logMessage(`Erro ao enviar notificação: ${error.message}`, 'error');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        logMessage('DOM carregado. Verificando suporte...');
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
             try {
-                const permission = await Notification.requestPermission();
-                document.getElementById('notification-status').textContent = permission.toUpperCase();
-                if (permission !== 'granted') throw new Error('Permissão de notificação negada.');
+                serviceWorkerRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                logMessage('Service Worker registrado.', 'success');
+                document.getElementById('sw-status').textContent = 'REGISTRADO';
 
-                logMessage('Inscrevendo para notificações push...', 'info');
-                const subscription = await serviceWorkerRegistration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                });
+                document.getElementById('notification-status').textContent = Notification.permission.toUpperCase();
                 
-                logMessage('Enviando inscrição para o servidor...', 'info');
-                await fetch('/api/save-subscription', {
-                    method: 'POST', body: JSON.stringify(subscription), headers: { 'Content-Type': 'application/json' },
-                });
-                
-                logMessage('Inscrição salva no servidor com sucesso!', 'success');
-                currentSubscription = subscription;
+                currentSubscription = await serviceWorkerRegistration.pushManager.getSubscription();
                 updateUI();
+
             } catch (error) {
-                logMessage(`Falha na Inscrição: ${error.message}`, 'error');
-                updateUI();
+                logMessage(`Falha no registro do SW: ${error}`, 'error');
+                document.getElementById('sw-status').textContent = 'FALHA';
             }
+        } else {
+            logMessage('Seu navegador não suporta Service Workers ou WebPush.', 'error');
+            subscribeButton.disabled = true;
         }
-
-        async function unsubscribeUser() {
-            if (!currentSubscription) return;
-
-            logMessage('Desativando inscrição...', 'warning');
-            try {
-                await fetch('/api/delete-subscription', {
-                    method: 'POST', body: JSON.stringify(currentSubscription), headers: { 'Content-Type': 'application/json' },
-                });
-                logMessage('Inscrição removida do servidor.', 'success');
-
-                await currentSubscription.unsubscribe();
-                
-                currentSubscription = null;
-                updateUI();
-                logMessage('Notificações desativadas com sucesso!', 'success');
-            } catch (error) {
-                logMessage(`Erro ao desativar: ${error.message}`, 'error');
-            }
-        }
-
-        function updateUI() {
-            if (currentSubscription) {
-                subscribeButton.style.display = 'none';
-                unsubscribeButton.style.display = 'inline-block';
-                sendPushButton.disabled = false;
-                document.getElementById('subscription-data').textContent = JSON.stringify(currentSubscription, null, 2);
-            } else {
-                subscribeButton.style.display = 'inline-block';
-                unsubscribeButton.style.display = 'none';
-                sendPushButton.disabled = true;
-                document.getElementById('subscription-data').textContent = 'Nenhuma inscrição ativa.';
-                subscribeButton.disabled = Notification.permission === 'denied';
-            }
-        }
-        
-        // --- LÓGICA DE INICIALIZAÇÃO E EVENTOS ---
-
-        subscribeButton.addEventListener('click', subscribeUser);
-        unsubscribeButton.addEventListener('click', unsubscribeUser);
-
-        document.getElementById('push-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const payload = {
-                title: document.getElementById('title').value,
-                body: document.getElementById('body').value,
-                url: document.getElementById('url').value,
-            };
-            logMessage('Enviando pedido de notificação para o servidor...', 'warning');
-            try {
-                const response = await fetch('/api/send-notification', {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (!response.ok) throw new Error(`Falha no servidor: ${response.statusText}`);
-                logMessage('Servidor aceitou o pedido. Notificação deve chegar em breve!', 'success');
-            } catch (error) {
-                logMessage(`Erro ao enviar notificação: ${error.message}`, 'error');
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            logMessage('DOM carregado. Verificando suporte...');
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                try {
-                    serviceWorkerRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-                    logMessage('Service Worker registrado.', 'success');
-                    document.getElementById('sw-status').textContent = 'REGISTRADO';
-
-                    document.getElementById('notification-status').textContent = Notification.permission.toUpperCase();
-                    
-                    currentSubscription = await serviceWorkerRegistration.pushManager.getSubscription();
-                    updateUI();
-
-                } catch (error) {
-                    logMessage(`Falha no registro do SW: ${error}`, 'error');
-                    document.getElementById('sw-status').textContent = 'FALHA';
-                }
-            } else {
-                logMessage('Seu navegador não suporta Service Workers ou WebPush.', 'error');
-                subscribeButton.disabled = true;
-            }
-        });
-    </script>
+    });
+</script>
 </body>
 </html>
